@@ -12,6 +12,9 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+      - name: Generate Android platform files
+        run: flutter create --platforms=android .
+        working-directory: sama_app
       - run: flutter pub get
         working-directory: sama_app
       - run: flutter build apk --debug
