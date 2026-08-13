@@ -1,4 +1,4 @@
-name: sama_app
+﻿name: sama_app
 description: "سَما — تطبيق مكالمات صوت وفيديو يشتغل بكفاءة على شبكات الإنترنت الفضائي والأرضي، لحسابات الأفراد والشركات."
 publish_to: "none"
 version: 0.1.0
@@ -9,10 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  # WebRTC الحقيقي للمكالمات الصوتية/الفيديو (نفس الأساس اللي بتشتغل بيه واتساب وزوم)
   flutter_webrtc: ^0.11.7
-  # عميل WebSocket للتواصل مع سيرفر الإشارات (Signaling Server)
-  web_socket_channel: ^2.4.5
+  web_socket_channel: ^3.0.3
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
