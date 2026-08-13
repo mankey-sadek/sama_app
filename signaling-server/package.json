@@ -1,0 +1,14 @@
+{
+  "name": "sama-signaling-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "سيرفر إشارات (Signaling) بسيط لتطبيق سَما — يسجّل المستخدمين ويمرر رسائل offer/answer/ice-candidate/hangup بينهم عبر WebSocket قبل ما يبدأ اتصال WebRTC المباشر.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test/test_signaling.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
