@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 
@@ -6,8 +6,6 @@ import '../services/signaling_service.dart';
 import '../services/webrtc_service.dart';
 import '../theme/app_theme.dart';
 
-/// شاشة المكالمة الفعلية — هنا فعليًا بيتم فتح المايك، وإنشاء اتصال
-/// WebRTC حقيقي (صادر أو وارد)، وعرض مؤشر جودة الاتصال بشكل حي.
 class CallScreen extends StatefulWidget {
   final String contactName;
   final String contactInitial;
@@ -40,6 +38,7 @@ class _CallScreenState extends State<CallScreen> {
   @override
   void initState() {
     super.initState();
+    widget.webrtcService.onCallEnded = _handleRemoteEnded;
     _setup();
   }
 
@@ -57,6 +56,12 @@ class _CallScreenState extends State<CallScreen> {
       final quality = await widget.webrtcService.checkQuality();
       if (mounted) setState(() => _quality = quality);
     });
+  }
+
+  void _handleRemoteEnded() {
+    _timer?.cancel();
+    _qualityTimer?.cancel();
+    if (mounted) Navigator.of(context).maybePop();
   }
 
   String get _timerLabel {
@@ -111,6 +116,7 @@ class _CallScreenState extends State<CallScreen> {
   void dispose() {
     _timer?.cancel();
     _qualityTimer?.cancel();
+    widget.webrtcService.onCallEnded = null;
     super.dispose();
   }
 

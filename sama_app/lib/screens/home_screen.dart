@@ -5,6 +5,7 @@ import '../services/signaling_service.dart';
 import '../services/webrtc_service.dart';
 import '../theme/app_theme.dart';
 import 'call_screen.dart';
+import 'incoming_call_screen.dart';
 import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -42,11 +43,9 @@ class _HomeScreenState extends State<HomeScreen> {
       userId: widget.phoneNumber,
     );
 
-    widget.signalingService.messages.listen((message) {
-      if (message['type'] == 'offer' && mounted) {
-        _openIncomingCall(message['from'] as String);
-      }
-    });
+    widget.webrtcService.onIncomingCall = (fromUserId) {
+      if (mounted) _openIncomingCall(fromUserId);
+    };
   }
 
   @override
@@ -85,11 +84,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void _openIncomingCall(String fromUserId) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => CallScreen(
-          contactName: fromUserId,
-          contactInitial: fromUserId.isNotEmpty ? fromUserId.substring(0, 1) : '؟',
-          remoteUserId: fromUserId,
-          isOutgoing: false,
+        builder: (_) => IncomingCallScreen(
+          callerId: fromUserId,
           webrtcService: widget.webrtcService,
           signalingService: widget.signalingService,
         ),
