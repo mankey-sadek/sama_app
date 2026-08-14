@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../models/contact.dart';
 import '../services/signaling_service.dart';
@@ -24,18 +24,21 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  static const String _defaultServerUrl = String.fromEnvironment(
+    'SIGNALING_SERVER_URL',
+    defaultValue: 'ws://10.0.2.2:4000',
+  );
+
+  late final TextEditingController _serverController =
+      TextEditingController(text: _defaultServerUrl);
+  final TextEditingController _dialController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
 
-    // الاتصال بسيرفر الإشارات باستخدام رقم الهاتف كمعرّف مبدئي للمستخدم.
-    // غيّر عنوان السيرفر ده لعنوان سيرفر الإشارات الحقيقي بتاعك عند النشر
-    // (السيرفر التجريبي المرفق موجود في مجلد signaling-server/).
     widget.signalingService.connect(
-      serverUrl: const String.fromEnvironment(
-        'SIGNALING_SERVER_URL',
-        defaultValue: 'ws://10.0.2.2:4000',
-      ),
+      serverUrl: _defaultServerUrl,
       userId: widget.phoneNumber,
     );
 
@@ -44,6 +47,39 @@ class _HomeScreenState extends State<HomeScreen> {
         _openIncomingCall(message['from'] as String);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _serverController.dispose();
+    _dialController.dispose();
+    super.dispose();
+  }
+
+  void _updateServer() {
+    final url = _serverController.text.trim();
+    if (url.isEmpty) return;
+    widget.signalingService.connect(serverUrl: url, userId: widget.phoneNumber);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('جاري الاتصال بسيرفر الإشارات: $url')),
+    );
+  }
+
+  void _callNumber() {
+    final number = _dialController.text.trim();
+    if (number.isEmpty) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CallScreen(
+          contactName: number,
+          contactInitial: number.substring(0, 1),
+          remoteUserId: number,
+          isOutgoing: true,
+          webrtcService: widget.webrtcService,
+          signalingService: widget.signalingService,
+        ),
+      ),
+    );
   }
 
   void _openIncomingCall(String fromUserId) {
@@ -106,6 +142,81 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 14),
               Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceRaised,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.gridline),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text('سيرفر الإشارات (Signaling Server)', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _serverController,
+                            style: const TextStyle(color: AppColors.textPrimary, fontSize: 12.5),
+                            textDirection: TextDirection.ltr,
+                            decoration: InputDecoration(
+                              isDense: true,
+                              filled: true,
+                              fillColor: AppColors.surface1,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.gridline)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.seriesBlue,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          ),
+                          onPressed: _updateServer,
+                          child: const Text('اتصال', style: TextStyle(fontSize: 12, color: Colors.white)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    const Text('اتصل برقم مباشرة', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _dialController,
+                            style: const TextStyle(color: AppColors.textPrimary, fontSize: 12.5),
+                            textDirection: TextDirection.ltr,
+                            decoration: InputDecoration(
+                              isDense: true,
+                              filled: true,
+                              fillColor: AppColors.surface1,
+                              hintText: '+20...',
+                              hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.gridline)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.statusGood,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          ),
+                          onPressed: _callNumber,
+                          child: const Icon(Icons.call_rounded, color: Colors.white, size: 18),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceRaised,
@@ -114,7 +225,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 child: const Text('بحث عن جهة اتصال…', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
+              const Text('جهات اتصال تجريبية (Demo)', style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
+              const SizedBox(height: 6),
               Expanded(
                 child: ListView.separated(
                   itemCount: mockContacts.length,
@@ -128,13 +241,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.seriesBlue,
-        onPressed: () {
-          if (mockContacts.isNotEmpty) _startCall(mockContacts.first);
-        },
-        child: const Icon(Icons.call_rounded, color: Colors.white),
       ),
     );
   }
