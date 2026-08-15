@@ -1,9 +1,21 @@
-﻿import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 import 'signaling_service.dart';
 
 enum CallQualityLevel { excellent, good, fair, poor, unknown }
 
+/// الطبقة اللي بتشغّل مكالمة WebRTC فعلية: بتفتح المايك، تنشئ اتصال
+/// نظير-لنظير (Peer Connection)، وتتبادل بيانات التفاوض عن طريق
+/// [SignalingService]، وتقيس جودة الاتصال بشكل دوري.
+///
+/// مهم: المكالمة الواردة معمولها هنا "انتظار قبول" — لما يوصل offer،
+/// التطبيق مبيردش تلقائي؛ بيستنى المستخدم يضغط قبول (acceptIncomingCall)
+/// أو رفض (declineIncomingCall) عن طريق شاشة "مكالمة واردة".
+///
+/// ملاحظة مهمة للإنتاج: قائمة iceServers هنا فيها STUN عام من جوجل بس،
+/// وده كافي للتجربة المحلية على نفس الواي فاي. في نسخة حقيقية على شبكات
+/// الأقمار الصناعية (اللي غالبًا بتستخدم NAT معقد) لازم تضيف سيرفر TURN
+/// خاص بيك (زي coturn) زي ما اتفقنا في وثيقة المعمارية.
 class WebRTCService {
   final SignalingService signaling;
 
@@ -15,11 +27,18 @@ class WebRTCService {
   final RTCVideoRenderer remoteRenderer = RTCVideoRenderer();
 
   String? _remoteUserId;
+
+  // حالة المكالمة الواردة قبل ما تتقبل
   String? _pendingCallerId;
   Map<String, dynamic>? _pendingOfferSdp;
 
   void Function(MediaStream stream)? onRemoteStream;
+
+  /// بينادَى لما يوصل عرض مكالمة جديد (offer) — من غير ما نرد تلقائيًا.
+  /// الوسيطة هي معرّف المتصل (رقم الهاتف).
   void Function(String fromUserId)? onIncomingCall;
+
+  /// بينادَى لما الطرف التاني يقفل المكالمة (hangup) وإحنا في مكالمة فعلية.
   void Function()? onCallEnded;
 
   final Map<String, dynamic> _iceConfig = {
@@ -63,12 +82,15 @@ class WebRTCService {
   Future<void> _openUserMedia() async {
     final stream = await navigator.mediaDevices.getUserMedia({
       'audio': true,
+      // ابدأ بمكالمات صوتية بس في الـ MVP — تفعيل الفيديو لاحقًا سهل
+      // (بس خد بالك إنه بيستهلك بيانات أكتر بكتير على شبكة فضائية محدودة).
       'video': false,
     });
     localStream = stream;
     localRenderer.srcObject = stream;
   }
 
+  /// بدء مكالمة صادرة لمستخدم تاني (يفترض إن الطرفين مسجلين على نفس سيرفر الإشارات)
   Future<void> startCall(String remoteUserId) async {
     _remoteUserId = remoteUserId;
     await _openUserMedia();
@@ -83,7 +105,15 @@ class WebRTCService {
     signaling.sendOffer(to: remoteUserId, sdp: offer.toMap());
   }
 
-  Future<void> _handleIncomingOffer(String from, Map<String, dynamic> sdpMap) async {
+  /// ينفَّذ فعليًا لما المستخدم يضغط "قبول" في شاشة المكالمة الواردة.
+  Future<void> acceptIncomingCall() async {
+    final from = _pendingCallerId;
+    final sdpMap = _pendingOfferSdp;
+    if (from == null || sdpMap == null) return;
+
+    _pendingCallerId = null;
+    _pendingOfferSdp = null;
+
     _remoteUserId = from;
     await _openUserMedia();
     await _createPeerConnection();
@@ -100,17 +130,7 @@ class WebRTCService {
     signaling.sendAnswer(to: from, sdp: answer.toMap());
   }
 
-  /// يُستدعى لما المستخدم يدوس "قبول" في شاشة المكالمة الواردة.
-  Future<void> acceptIncomingCall() async {
-    final from = _pendingCallerId;
-    final sdpMap = _pendingOfferSdp;
-    if (from == null || sdpMap == null) return;
-    await _handleIncomingOffer(from, sdpMap);
-    _pendingCallerId = null;
-    _pendingOfferSdp = null;
-  }
-
-  /// يُستدعى لما المستخدم يدوس "رفض" في شاشة المكالمة الواردة.
+  /// ينفَّذ لما المستخدم يضغط "رفض" في شاشة المكالمة الواردة.
   void declineIncomingCall() {
     final from = _pendingCallerId;
     if (from != null) {
@@ -137,6 +157,8 @@ class WebRTCService {
   void _handleSignalingMessage(Map<String, dynamic> message) {
     switch (message['type']) {
       case 'offer':
+        // مبنردش تلقائي — بنسجّل العرض وننادي onIncomingCall عشان
+        // الواجهة تعرض شاشة "مكالمة واردة" فيها قبول/رفض.
         _pendingCallerId = message['from'] as String;
         _pendingOfferSdp = Map<String, dynamic>.from(message['sdp'] as Map);
         onIncomingCall?.call(_pendingCallerId!);
@@ -163,6 +185,10 @@ class WebRTCService {
     }
   }
 
+  /// تقدير مبسّط لجودة المكالمة من إحصاءات RTCPeerConnection (فقد الحزم
+  /// وزمن الرحلة ذهابًا وإيابًا). ده هو نفس المؤشر اللي بيظهر في واجهة
+  /// المستخدم أثناء المكالمة، ومهم جدًا على شبكات الأقمار الصناعية
+  /// غير المستقرة زي ما ناقشنا في وثيقة المعمارية.
   Future<CallQualityLevel> checkQuality() async {
     if (_peerConnection == null) return CallQualityLevel.unknown;
     try {

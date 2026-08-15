@@ -1,8 +1,15 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:web_socket_channel/web_socket_channel.dart';
 
+/// عميل بسيط لسيرفر الإشارات (Signaling Server) عن طريق WebSocket.
+///
+/// دوره الوحيد إنه ينقل رسائل التفاوض بين طرفين قبل ما يبدأ الاتصال المباشر
+/// (offer / answer / ice-candidate)، بالإضافة لرسالة hangup لإنهاء المكالمة.
+/// لا ينقل أي صوت أو فيديو — ده شغل WebRTC نفسه بعد ما يتفق الطرفين.
+///
+/// السيرفر المطابق موجود في مجلد signaling-server/ بجانب هذا المشروع.
 class SignalingService {
   WebSocketChannel? _channel;
   final StreamController<Map<String, dynamic>> _messageController =
@@ -13,10 +20,14 @@ class SignalingService {
 
   Stream<Map<String, dynamic>> get messages => _messageController.stream;
   bool get isConnected => _connected;
+  String? get userId => _userId;
 
+  /// يوصّل (أو يعيد الاتصال لو كان متصل قبل كده) بسيرفر الإشارات.
+  /// آمن إنه يتنادى أكتر من مرة — بيقفل أي اتصال قديم الأول.
   Future<void> connect({required String serverUrl, required String userId}) async {
     _userId = userId;
     _connected = false;
+
     await _channel?.sink.close();
     _channel = WebSocketChannel.connect(Uri.parse(serverUrl));
 

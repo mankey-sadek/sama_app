@@ -1,10 +1,12 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../services/signaling_service.dart';
 import '../services/webrtc_service.dart';
 import '../theme/app_theme.dart';
 import 'call_screen.dart';
 
+/// شاشة "مكالمة واردة" — بتظهر لما يوصل عرض مكالمة (offer) من طرف تاني،
+/// وبتستنى المستخدم يقرر يقبل أو يرفض قبل ما أي صوت يشتغل.
 class IncomingCallScreen extends StatelessWidget {
   final String callerId;
   final WebRTCService webrtcService;
@@ -48,20 +50,23 @@ class IncomingCallScreen extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(24, 40, 24, 40),
           child: Column(
             children: [
-              const Text('مكالمة واردة', style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+              const Text(
+                'مكالمة واردة',
+                style: TextStyle(fontSize: 15, color: AppColors.textMuted, fontWeight: FontWeight.w600),
+              ),
               const Spacer(),
               CircleAvatar(
-                radius: 60,
+                radius: 54,
                 backgroundColor: AppColors.seriesViolet,
                 child: Text(
                   callerId.isNotEmpty ? callerId.substring(0, 1) : '؟',
-                  style: const TextStyle(fontSize: 38, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
               ),
               const SizedBox(height: 16),
               Text(callerId, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
               const SizedBox(height: 6),
-              const Text('🛰 عبر الإنترنت الفضائي', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+              const Text('🛰 مكالمة عبر الإنترنت الفضائي', style: TextStyle(fontSize: 12.5, color: AppColors.textMuted)),
               const Spacer(),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -74,11 +79,11 @@ class IncomingCallScreen extends StatelessWidget {
                           width: 64,
                           height: 64,
                           decoration: const BoxDecoration(color: AppColors.statusCritical, shape: BoxShape.circle),
-                          child: const Icon(Icons.call_end_rounded, color: Colors.white),
+                          child: const Icon(Icons.call_end_rounded, color: Colors.white, size: 28),
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      const Text('رفض', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                      const SizedBox(height: 10),
+                      const Text('رفض', style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary)),
                     ],
                   ),
                   Column(
@@ -89,11 +94,11 @@ class IncomingCallScreen extends StatelessWidget {
                           width: 64,
                           height: 64,
                           decoration: const BoxDecoration(color: AppColors.statusGood, shape: BoxShape.circle),
-                          child: const Icon(Icons.call_rounded, color: Colors.white),
+                          child: const Icon(Icons.call_rounded, color: Colors.white, size: 28),
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      const Text('قبول', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                      const SizedBox(height: 10),
+                      const Text('قبول', style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary)),
                     ],
                   ),
                 ],

@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 
@@ -6,6 +6,8 @@ import '../services/signaling_service.dart';
 import '../services/webrtc_service.dart';
 import '../theme/app_theme.dart';
 
+/// شاشة المكالمة الفعلية — هنا فعليًا بيتم فتح المايك، وإنشاء اتصال
+/// WebRTC حقيقي (صادر أو وارد)، وعرض مؤشر جودة الاتصال بشكل حي.
 class CallScreen extends StatefulWidget {
   final String contactName;
   final String contactInitial;
