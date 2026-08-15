@@ -15,6 +15,11 @@ jobs:
       - name: Generate Android platform files
         run: flutter create --platforms=android .
         working-directory: sama_app
+      - name: Allow cleartext WebSocket traffic (ws://) for local testing
+        run: |
+          sed -i 's/<application/<application\n        android:usesCleartextTraffic="true"/' android/app/src/main/AndroidManifest.xml
+          cat android/app/src/main/AndroidManifest.xml
+        working-directory: sama_app
       - run: flutter pub get
         working-directory: sama_app
       - run: flutter build apk --debug
